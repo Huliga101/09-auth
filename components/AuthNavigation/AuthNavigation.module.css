@@ -1,0 +1,33 @@
+.navigationItem {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.navigationLink {
+  color: #ffffff;
+  text-decoration: none;
+  font-weight: 500;
+}
+
+.navigationLink:hover {
+  text-decoration: underline;
+}
+
+.userEmail {
+  margin: 0;
+  color: #ffffff;
+  font-size: 14px;
+}
+
+.logoutButton {
+  border: none;
+  background: transparent;
+  color: #ffffff;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.logoutButton:hover {
+  text-decoration: underline;
+}
