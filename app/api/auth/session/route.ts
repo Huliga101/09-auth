@@ -14,7 +14,7 @@ export async function GET(request: Request) {
       },
     });
 
-    return NextResponse.json(apiResponse.data ?? null, {
+    return NextResponse.json(apiResponse.data || null, {
       status: 200,
     });
   } catch (error) {
