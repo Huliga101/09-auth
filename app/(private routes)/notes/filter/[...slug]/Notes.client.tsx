@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
-import { fetchNotes } from "@/lib/api/notes";
+import { fetchNotes } from "@/lib/api/clientApi";
 import type { NoteTag } from "@/types/note";
 import SearchBox from "@/components/SearchBox/SearchBox";
 import Pagination from "@/components/Pagination/Pagination";
@@ -41,6 +41,7 @@ export default function NotesClient({ selectedTag, tag }: NotesClientProps) {
         tag,
       }),
     placeholderData: keepPreviousData,
+    retry: false,
   });
 
   if (isLoading) {
