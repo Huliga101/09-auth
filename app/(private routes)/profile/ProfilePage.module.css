@@ -1,0 +1,46 @@
+.mainContent {
+  flex: 1;
+  padding: 40px 24px;
+}
+
+.profileCard {
+  max-width: 480px;
+  margin: 0 auto;
+  padding: 32px;
+  border-radius: 16px;
+  background-color: #ffffff;
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 24px;
+}
+
+.formTitle {
+  margin: 0;
+  font-size: 32px;
+  font-weight: 700;
+}
+
+.editProfileButton {
+  text-decoration: none;
+  color: #0b5cff;
+}
+
+.avatarWrapper {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 24px;
+}
+
+.avatar {
+  border-radius: 50%;
+}
+
+.profileInfo {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
