@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
+import { checkSession } from "./lib/api/serverApi";
 
-const privateRoutes = ["/notes", "/profile"];
+const privateRoutes = ["/profile", "/notes"];
 const authRoutes = ["/sign-in", "/sign-up"];
 
 function isPrivateRoute(pathname: string) {
@@ -11,33 +12,71 @@ function isAuthRoute(pathname: string) {
   return authRoutes.some((route) => pathname.startsWith(route));
 }
 
-function hasAuthCookies(request: NextRequest) {
+function applySetCookie(
+  response: NextResponse,
+  setCookieHeader: string | string[] | undefined,
+) {
+  if (!setCookieHeader) return;
+
+  const cookies = Array.isArray(setCookieHeader)
+    ? setCookieHeader
+    : [setCookieHeader];
+
+  cookies.forEach((cookie) => {
+    response.headers.append("Set-Cookie", cookie);
+  });
+}
+
+export async function proxy(request: NextRequest) {
+  const { pathname } = request.nextUrl;
+
   const accessToken = request.cookies.get("accessToken")?.value;
   const refreshToken = request.cookies.get("refreshToken")?.value;
 
-  return Boolean(accessToken || refreshToken);
-}
+  const privateRoute = isPrivateRoute(pathname);
+  const authRoute = isAuthRoute(pathname);
 
-export function proxy(request: NextRequest) {
-  const { pathname } = request.nextUrl;
+  let isAuthenticated = Boolean(accessToken);
+  let setCookieHeader: string | string[] | undefined;
 
-  const isPrivate = isPrivateRoute(pathname);
-  const isAuth = isAuthRoute(pathname);
-  const isAuthenticated = hasAuthCookies(request);
+  if (!accessToken && refreshToken) {
+    try {
+      const sessionResponse = await checkSession();
 
-  if (isPrivate && !isAuthenticated) {
-    const signInUrl = new URL("/sign-in", request.url);
-    return NextResponse.redirect(signInUrl);
+      isAuthenticated = sessionResponse.data.success;
+      setCookieHeader = sessionResponse.headers["set-cookie"];
+    } catch {
+      isAuthenticated = false;
+    }
   }
 
-  if (isAuth && isAuthenticated) {
-    const profileUrl = new URL("/profile", request.url);
-    return NextResponse.redirect(profileUrl);
+  if (privateRoute && !isAuthenticated) {
+    const redirectResponse = NextResponse.redirect(
+      new URL("/sign-in", request.url),
+    );
+
+    applySetCookie(redirectResponse, setCookieHeader);
+
+    return redirectResponse;
   }
 
-  return NextResponse.next();
+  if (authRoute && isAuthenticated) {
+    const redirectResponse = NextResponse.redirect(
+      new URL("/profile", request.url),
+    );
+
+    applySetCookie(redirectResponse, setCookieHeader);
+
+    return redirectResponse;
+  }
+
+  const response = NextResponse.next();
+
+  applySetCookie(response, setCookieHeader);
+
+  return response;
 }
 
 export const config = {
-  matcher: ["/notes/:path*", "/profile/:path*", "/sign-in", "/sign-up"],
+  matcher: ["/profile/:path*", "/notes/:path*", "/sign-in", "/sign-up"],
 };
