@@ -1,66 +1,55 @@
 import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
+import { api } from "../../api";
 import { parse } from "cookie";
 import { isAxiosError } from "axios";
-import { api } from "../../api";
 import { logErrorResponse } from "../../_utils/utils";
 
 export async function GET() {
   try {
     const cookieStore = await cookies();
-
     const accessToken = cookieStore.get("accessToken")?.value;
     const refreshToken = cookieStore.get("refreshToken")?.value;
 
-    if (!accessToken && !refreshToken) {
-      return NextResponse.json(null, { status: 200 });
+    if (accessToken) {
+      return NextResponse.json({ success: true });
     }
 
-    const sessionRes = await api.get("auth/session", {
-      headers: {
-        Cookie: cookieStore.toString(),
-      },
-    });
+    if (refreshToken) {
+      const apiRes = await api.get("auth/session", {
+        headers: {
+          Cookie: cookieStore.toString(),
+        },
+      });
 
-    const setCookie = sessionRes.headers["set-cookie"];
+      const setCookie = apiRes.headers["set-cookie"];
 
-    if (setCookie) {
-      const cookieArray = Array.isArray(setCookie) ? setCookie : [setCookie];
+      if (setCookie) {
+        const cookieArray = Array.isArray(setCookie) ? setCookie : [setCookie];
+        for (const cookieStr of cookieArray) {
+          const parsed = parse(cookieStr);
 
-      for (const cookieStr of cookieArray) {
-        const parsed = parse(cookieStr);
+          const options = {
+            expires: parsed.Expires ? new Date(parsed.Expires) : undefined,
+            path: parsed.Path,
+            maxAge: Number(parsed["Max-Age"]),
+          };
 
-        const options = {
-          httpOnly: true,
-          path: parsed.Path ?? "/",
-          sameSite: "lax" as const,
-          secure: process.env.NODE_ENV === "production",
-          expires: parsed.Expires ? new Date(parsed.Expires) : undefined,
-          maxAge: parsed["Max-Age"] ? Number(parsed["Max-Age"]) : undefined,
-        };
-
-        if (parsed.accessToken) {
-          cookieStore.set("accessToken", parsed.accessToken, options);
+          if (parsed.accessToken)
+            cookieStore.set("accessToken", parsed.accessToken, options);
+          if (parsed.refreshToken)
+            cookieStore.set("refreshToken", parsed.refreshToken, options);
         }
-
-        if (parsed.refreshToken) {
-          cookieStore.set("refreshToken", parsed.refreshToken, options);
-        }
+        return NextResponse.json({ success: true }, { status: 200 });
       }
     }
-
-    return NextResponse.json(sessionRes.data ?? null, { status: 200 });
+    return NextResponse.json({ success: false }, { status: 200 });
   } catch (error) {
     if (isAxiosError(error)) {
       logErrorResponse(error.response?.data);
-    } else {
-      logErrorResponse({ message: (error as Error).message });
+      return NextResponse.json({ success: false }, { status: 200 });
     }
-
-    const cookieStore = await cookies();
-    cookieStore.delete("accessToken");
-    cookieStore.delete("refreshToken");
-
-    return NextResponse.json(null, { status: 200 });
+    logErrorResponse({ message: (error as Error).message });
+    return NextResponse.json({ success: false }, { status: 200 });
   }
 }
