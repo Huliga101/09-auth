@@ -1,9 +1,8 @@
-import axios from "axios";
+import type { AxiosResponse } from "axios";
 import { cookies } from "next/headers";
+import { api } from "./api";
 import type { Note, NoteTag } from "@/types/note";
 import type { User } from "@/types/user";
-
-const baseURL = `${process.env.NEXT_PUBLIC_API_URL}/api`;
 
 export interface FetchNotesResponse {
   notes: Note[];
@@ -15,6 +14,10 @@ interface FetchNotesParams {
   perPage?: number;
   search?: string;
   tag?: NoteTag;
+}
+
+interface CheckSessionResponse {
+  success: boolean;
 }
 
 async function getServerHeaders() {
@@ -44,7 +47,7 @@ export async function fetchNotes({
     params.tag = tag;
   }
 
-  const response = await axios.get<FetchNotesResponse>(`${baseURL}/notes`, {
+  const response = await api.get<FetchNotesResponse>("/notes", {
     params,
     headers: await getServerHeaders(),
   });
@@ -53,7 +56,7 @@ export async function fetchNotes({
 }
 
 export async function fetchNoteById(id: string): Promise<Note> {
-  const response = await axios.get<Note>(`${baseURL}/notes/${id}`, {
+  const response = await api.get<Note>(`/notes/${id}`, {
     headers: await getServerHeaders(),
   });
 
@@ -61,17 +64,19 @@ export async function fetchNoteById(id: string): Promise<Note> {
 }
 
 export async function getMe(): Promise<User> {
-  const response = await axios.get<User>(`${baseURL}/users/me`, {
+  const response = await api.get<User>("/users/me", {
     headers: await getServerHeaders(),
   });
 
   return response.data;
 }
 
-export async function checkSession(): Promise<User | null> {
-  const response = await axios.get<User | null>(`${baseURL}/auth/session`, {
+export async function checkSession(): Promise<
+  AxiosResponse<CheckSessionResponse>
+> {
+  const response = await api.get<CheckSessionResponse>("/auth/session", {
     headers: await getServerHeaders(),
   });
 
-  return response.data;
+  return response;
 }
