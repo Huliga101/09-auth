@@ -2,7 +2,7 @@
 
 import { ReactNode, useEffect, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
-import { checkSession } from "@/lib/api/clientApi";
+import { checkSession, getMe } from "@/lib/api/clientApi";
 import { useAuthStore } from "@/lib/store/authStore";
 import type { User } from "@/types/user";
 
@@ -39,28 +39,54 @@ export default function AuthProvider({ children }: AuthProviderProps) {
     let ignore = false;
 
     const verifySession = async () => {
+      const privateRoute = isPrivateRoute(pathname);
+
       try {
-        const user = await checkSession();
+        const sessionUser = await checkSession();
 
         if (ignore) return;
 
-        if (isUser(user)) {
-          setUser(user);
+        if (isUser(sessionUser)) {
+          setUser(sessionUser);
           return;
+        }
+
+        try {
+          const currentUser = await getMe();
+
+          if (ignore) return;
+
+          if (isUser(currentUser)) {
+            setUser(currentUser);
+            return;
+          }
+        } catch {
+          // If /users/me also fails, user is really not authorized.
         }
 
         clearIsAuthenticated();
 
-        if (isPrivateRoute(pathname)) {
+        if (privateRoute) {
           router.replace("/sign-in");
         }
       } catch {
         if (ignore) return;
 
-        clearIsAuthenticated();
+        try {
+          const currentUser = await getMe();
 
-        if (isPrivateRoute(pathname)) {
-          router.replace("/sign-in");
+          if (ignore) return;
+
+          if (isUser(currentUser)) {
+            setUser(currentUser);
+            return;
+          }
+        } catch {
+          clearIsAuthenticated();
+
+          if (privateRoute) {
+            router.replace("/sign-in");
+          }
         }
       } finally {
         if (!ignore) {
