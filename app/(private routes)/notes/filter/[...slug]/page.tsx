@@ -9,7 +9,7 @@ import type { NoteTag } from "@/types/note";
 import NotesClient from "./Notes.client";
 import type { Metadata } from "next";
 
-const SITE_URL = "https://08-zustand.vercel.app";
+const SITE_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3000";
 const OG_IMAGE = "https://ac.goit.global/fullstack/react/notehub-og-meta.jpg";
 
 const INITIAL_PAGE = 1;

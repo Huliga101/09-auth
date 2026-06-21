@@ -7,7 +7,7 @@ import { fetchNoteById } from "@/lib/api/serverApi";
 import NoteDetailsClient from "./NoteDetails.client";
 import type { Metadata } from "next";
 
-const SITE_URL = "https://08-zustand.vercel.app";
+const SITE_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3000";
 const OG_IMAGE = "https://ac.goit.global/fullstack/react/notehub-og-meta.jpg";
 
 type NoteDetailsPageProps = {   

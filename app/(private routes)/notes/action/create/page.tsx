@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import NoteForm from "@/components/NoteForm/NoteForm";
 import css from "./CreateNote.module.css";
 
-const SITE_URL = "https://08-zustand.vercel.app";
+const SITE_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3000";
 const OG_IMAGE = "https://ac.goit.global/fullstack/react/notehub-og-meta.jpg";
 
 export const metadata: Metadata = {
