@@ -5,29 +5,29 @@
 }
 
 .navigationLink {
-  color: #ffffff;
+  color: #111827;
   text-decoration: none;
   font-weight: 500;
 }
 
 .navigationLink:hover {
-  text-decoration: underline;
+  color: #0b5cff;
 }
 
 .userEmail {
   margin: 0;
-  color: #ffffff;
+  color: #111827;
   font-size: 14px;
 }
 
 .logoutButton {
   border: none;
   background: transparent;
-  color: #ffffff;
+  color: #111827;
   font-weight: 500;
   cursor: pointer;
 }
 
 .logoutButton:hover {
-  text-decoration: underline;
+  color: #0b5cff;
 }
