@@ -16,13 +16,13 @@ export async function GET() {
       return NextResponse.json(null, { status: 200 });
     }
 
-    const apiRes = await api.get("auth/session", {
+    const sessionRes = await api.get("auth/session", {
       headers: {
         Cookie: cookieStore.toString(),
       },
     });
 
-    const setCookie = apiRes.headers["set-cookie"];
+    const setCookie = sessionRes.headers["set-cookie"];
 
     if (setCookie) {
       const cookieArray = Array.isArray(setCookie) ? setCookie : [setCookie];
@@ -31,8 +31,11 @@ export async function GET() {
         const parsed = parse(cookieStr);
 
         const options = {
+          httpOnly: true,
+          path: parsed.Path ?? "/",
+          sameSite: "lax" as const,
+          secure: process.env.NODE_ENV === "production",
           expires: parsed.Expires ? new Date(parsed.Expires) : undefined,
-          path: parsed.Path,
           maxAge: parsed["Max-Age"] ? Number(parsed["Max-Age"]) : undefined,
         };
 
@@ -46,7 +49,7 @@ export async function GET() {
       }
     }
 
-    return NextResponse.json(apiRes.data ?? null, { status: 200 });
+    return NextResponse.json(sessionRes.data ?? null, { status: 200 });
   } catch (error) {
     if (isAxiosError(error)) {
       logErrorResponse(error.response?.data);

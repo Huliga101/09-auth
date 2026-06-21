@@ -2,7 +2,7 @@
 
 import { ReactNode, useEffect, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
-import { checkSession, logout } from "@/lib/api/clientApi";
+import { checkSession } from "@/lib/api/clientApi";
 import { useAuthStore } from "@/lib/store/authStore";
 import type { User } from "@/types/user";
 
@@ -33,22 +33,12 @@ export default function AuthProvider({ children }: AuthProviderProps) {
     (state) => state.clearIsAuthenticated,
   );
 
-  const [isChecking, setIsChecking] = useState(false);
-  const [isAllowed, setIsAllowed] = useState(true);
+  const [isChecking, setIsChecking] = useState(true);
 
   useEffect(() => {
     let ignore = false;
 
     const verifySession = async () => {
-      const privateRoute = isPrivateRoute(pathname);
-
-      if (privateRoute) {
-        setIsChecking(true);
-        setIsAllowed(false);
-      } else {
-        setIsAllowed(true);
-      }
-
       try {
         const user = await checkSession();
 
@@ -56,19 +46,12 @@ export default function AuthProvider({ children }: AuthProviderProps) {
 
         if (isUser(user)) {
           setUser(user);
-          setIsAllowed(true);
           return;
         }
 
         clearIsAuthenticated();
 
-        if (privateRoute) {
-          try {
-            await logout();
-          } catch {
-            // Ignore logout errors when session is already missing.
-          }
-
+        if (isPrivateRoute(pathname)) {
           router.replace("/sign-in");
         }
       } catch {
@@ -76,13 +59,7 @@ export default function AuthProvider({ children }: AuthProviderProps) {
 
         clearIsAuthenticated();
 
-        if (privateRoute) {
-          try {
-            await logout();
-          } catch {
-            // Ignore logout errors when session is already missing.
-          }
-
+        if (isPrivateRoute(pathname)) {
           router.replace("/sign-in");
         }
       } finally {
@@ -99,7 +76,7 @@ export default function AuthProvider({ children }: AuthProviderProps) {
     };
   }, [pathname, router, setUser, clearIsAuthenticated]);
 
-  if (isPrivateRoute(pathname) && (isChecking || !isAllowed)) {
+  if (isChecking && isPrivateRoute(pathname)) {
     return <p>Loading...</p>;
   }
 
