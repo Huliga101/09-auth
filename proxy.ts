@@ -27,6 +27,37 @@ function applySetCookie(
   });
 }
 
+function redirectToSignIn(request: NextRequest) {
+  return NextResponse.redirect(new URL("/sign-in", request.url));
+}
+
+function redirectToProfile(request: NextRequest) {
+  return NextResponse.redirect(new URL("/profile", request.url));
+}
+
+async function refreshSession(request: NextRequest) {
+  try {
+    const sessionResponse = await checkSession();
+
+    if (!sessionResponse.data.success) {
+      return null;
+    }
+
+    const setCookieHeader = sessionResponse.headers["set-cookie"];
+
+    if (!setCookieHeader) {
+      return null;
+    }
+
+    const response = NextResponse.redirect(request.url);
+    applySetCookie(response, setCookieHeader);
+
+    return response;
+  } catch {
+    return null;
+  }
+}
+
 export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
@@ -36,45 +67,37 @@ export async function proxy(request: NextRequest) {
   const privateRoute = isPrivateRoute(pathname);
   const authRoute = isAuthRoute(pathname);
 
-  let isAuthenticated = Boolean(accessToken);
-  let setCookieHeader: string | string[] | undefined;
+  if (privateRoute) {
+    if (accessToken) {
+      return NextResponse.next();
+    }
 
-  if (!accessToken && refreshToken) {
-    try {
-      const sessionResponse = await checkSession();
+    if (refreshToken) {
+      const refreshedResponse = await refreshSession(request);
 
-      isAuthenticated = sessionResponse.data.success;
-      setCookieHeader = sessionResponse.headers["set-cookie"];
-    } catch {
-      isAuthenticated = false;
+      if (refreshedResponse) {
+        return refreshedResponse;
+      }
+    }
+
+    return redirectToSignIn(request);
+  }
+
+  if (authRoute) {
+    if (accessToken) {
+      return redirectToProfile(request);
+    }
+
+    if (refreshToken) {
+      const refreshedResponse = await refreshSession(request);
+
+      if (refreshedResponse) {
+        return redirectToProfile(request);
+      }
     }
   }
 
-  if (privateRoute && !isAuthenticated) {
-    const redirectResponse = NextResponse.redirect(
-      new URL("/sign-in", request.url),
-    );
-
-    applySetCookie(redirectResponse, setCookieHeader);
-
-    return redirectResponse;
-  }
-
-  if (authRoute && isAuthenticated) {
-    const redirectResponse = NextResponse.redirect(
-      new URL("/profile", request.url),
-    );
-
-    applySetCookie(redirectResponse, setCookieHeader);
-
-    return redirectResponse;
-  }
-
-  const response = NextResponse.next();
-
-  applySetCookie(response, setCookieHeader);
-
-  return response;
+  return NextResponse.next();
 }
 
 export const config = {
